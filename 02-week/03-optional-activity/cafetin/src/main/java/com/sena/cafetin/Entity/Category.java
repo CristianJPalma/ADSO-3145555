@@ -1,13 +1,11 @@
 package com.sena.cafetin.Entity;
 
-import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 
 @Entity(name = "category")
 public class Category {
@@ -23,17 +21,15 @@ public class Category {
     @Column(name = "description")
     private String description;
     
-    @OneToMany(mappedBy = "category")
-    private List<Product> products;
+
 
     public Category() {
     }
 
-    public Category(int id, String name, String description, List<Product> products) {
+    public Category(int id, String name, String description) {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.products = products;
     }
 
     public int getId() {
@@ -60,13 +56,6 @@ public class Category {
         this.description = description;
     }
 
-    public List<Product> getProducts() {
-        return products;
-    }
-
-    public void setProducts(List<Product> products) {
-        this.products = products;
-    }
 
     
 }

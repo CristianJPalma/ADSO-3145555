@@ -1,6 +1,5 @@
 package com.sena.cafetin.Entity;
 
-import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -8,7 +7,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 
 @Entity(name = "users")
@@ -29,22 +27,14 @@ public class Users {
     @JoinColumn(name = "id_person")
     private Person person;
 
-    @OneToMany(mappedBy = "users")
-    private List<UserRole> userRoles;
-
-    @OneToMany(mappedBy = "users")
-    private List<Bill> bills;
-
     public Users() {
     }
 
-    public Users(int id, String username, String password, Person person, List<UserRole> userRoles, List<Bill> bills) {
+    public Users(int id, String username, String password, Person person) {
         this.id = id;
         this.username = username;
         this.password = password;
         this.person = person;
-        this.userRoles = userRoles;
-        this.bills = bills;
     }
 
     public int getId() {
@@ -79,21 +69,6 @@ public class Users {
         this.person = person;
     }
 
-    public List<UserRole> getUserRoles() {
-        return userRoles;
-    }
-
-    public void setUserRoles(List<UserRole> userRoles) {
-        this.userRoles = userRoles;
-    }
-
-    public List<Bill> getBills() {
-        return bills;
-    }
-
-    public void setBills(List<Bill> bills) {
-        this.bills = bills;
-    }
 
     
 }

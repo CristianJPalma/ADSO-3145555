@@ -6,7 +6,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
 
 @Entity(name = "person")
 public class Person {
@@ -25,18 +24,15 @@ public class Person {
     @Column(name = "email")
     private String email;
 
-    @OneToOne(mappedBy = "person")
-    private Users users;
 
     public Person() {
     }
 
-    public Person(int id, String firstName, String lastName, String email, Users users) {
+    public Person(int id, String firstName, String lastName, String email) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
-        this.users = users;
     }
 
     public int getId() {
@@ -71,13 +67,6 @@ public class Person {
         this.email = email;
     }
 
-    public Users getUser() {
-        return users;
-    }
-
-    public void setUser(Users user) {
-        this.users = user;
-    }
 
     
 }

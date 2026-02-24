@@ -1,7 +1,6 @@
 package com.sena.cafetin.Entity;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,7 +9,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 
 @Entity(name = "bill")
 public class Bill {
@@ -30,19 +28,15 @@ public class Bill {
     @JoinColumn(name = "id_user")
     private Users users;
 
-    @OneToMany(mappedBy = "bill")
-    private List<BillDetail> billDetails;
-
     
     public Bill() {
     }
 
-    public Bill(int id, LocalDateTime date, Double total, Users user, List<BillDetail> bill_details) {
+    public Bill(int id, LocalDateTime date, Double total, Users user) {
         this.id = id;
         this.date = date;
         this.total = total;
-        this.users = users;
-        this.billDetails = billDetails;
+
     }
 
     public int getId() {
@@ -77,13 +71,6 @@ public class Bill {
         this.users = user;
     }
 
-    public List<BillDetail> getBill_details() {
-        return billDetails;
-    }
-
-    public void setBill_details(List<BillDetail> bill_details) {
-        this.billDetails = bill_details;
-    }
 
 
     
