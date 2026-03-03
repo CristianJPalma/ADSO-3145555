@@ -1,0 +1,47 @@
+flowchart TD
+    A([🟢 Inicio]) --> B[Usuario accede al sistema]
+    B --> C{¿Tiene rol asignado?}
+    C -- No --> D([🔴 Acceso denegado])
+    C -- Sí --> E{¿Cuál es el rol?}
+
+    %% ── Flujo Usuario ──────────────────────────────
+    E -- Usuario --> F[Visualiza catálogo de productos]
+    F --> G[Selecciona producto y cantidad]
+    G --> H[Agrega producto al carrito]
+    H --> I{¿Desea seguir agregando?}
+    I -- Sí --> F
+    I -- No --> J[Revisa carrito de compras]
+    J --> K{¿Modifica cantidades?}
+    K -- Sí --> G
+    K -- No --> L[Confirma el pedido]
+    L --> M[Sistema registra pedido estado: PENDIENTE]
+    M --> N[Mensaje de confirmación visual]
+    N --> O([🔵 Fin — Espera pedido])
+
+    %% ── Flujo Personal del Cafetín ─────────────────
+    E -- Personal del Cafetín --> P[Visualiza lista de pedidos]
+    P --> Q[Selecciona un pedido]
+    Q --> R{¿Estado actual?}
+
+    R -- Pendiente --> S[Cambia estado: EN PREPARACIÓN]
+    S --> T{¿Pedido listo?}
+    T -- No --> T
+    T -- Sí --> U[Cambia estado: LISTO]
+    U --> V[Entrega pedido al usuario]
+    V --> W[Cambia estado: ENTREGADO]
+    W --> X{¿El pedido está entregado?}
+    X -- Sí --> Y[Pedido bloqueado\nno se puede modificar]
+    Y --> Z([🔵 Fin — Pedido completado])
+
+    R -- En preparación --> S
+    R -- Listo --> V
+    R -- Entregado --> Y
+
+    %% ── Estilos ────────────────────────────────────
+    style A fill:#22c55e,color:#fff,stroke:none
+    style D fill:#ef4444,color:#fff,stroke:none
+    style O fill:#3b82f6,color:#fff,stroke:none
+    style Z fill:#3b82f6,color:#fff,stroke:none
+    style M fill:#f59e0b,color:#fff,stroke:none
+    style W fill:#10b981,color:#fff,stroke:none
+    style Y fill:#6b7280,color:#fff,stroke:none

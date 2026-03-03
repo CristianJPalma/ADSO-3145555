@@ -1,0 +1,431 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#0f172a",
+    "primaryTextColor": "#f8fafc",
+    "primaryBorderColor": "#334155",
+    "lineColor": "#94a3b8",
+    "fontSize": "15px",
+    "edgeLabelBackground": "#1e293b"
+  }
+}}%%
+
+flowchart TD
+
+    subgraph POOL["⬛  PROCESS: order-management-system  |  v1.0.0  |  Cafetín SENA Industrial"]
+        direction TB
+
+%% ════════════════════════════════════════════
+%%  LANE: CLIENT  [Browser / Frontend]
+%% ════════════════════════════════════════════
+        subgraph LANE_F["🖥️  LANE: CLIENT  —  Browser / Frontend  [RNF-04]"]
+            direction TB
+
+            F_START(["▶  trigger: user_request_order
+            ─────────────────────────────
+            event: pageLoad()
+            route: /home"])
+
+            F_HTTP["📡  HTTP REQUEST
+            ─────────────────────────────────────
+            GET /api/products
+            GET /api/auth/validate-role
+            headers: { Authorization: Bearer token }
+            ── RNF-01 / RNF-04 ──"]
+
+            F_AUTH_CHK{{"⚡  GUARD: auth.canActivate()
+            ─────────────────────────
+            role === 'user' ||
+            role === 'staff' ?
+            ── RNF-01 ──"}}
+
+            F_403(["🚫  HTTP 403 Forbidden
+            ──────────────────────
+            redirect: /unauthorized
+            log: ACCESS_DENIED"])
+
+            F_RENDER_CAT["🖼️  RENDER: ProductCatalogComponent
+            ──────────────────────────────────────
+            GET /api/products → 200 OK
+            state: products[ ] loaded
+            display: name, price, description
+            ── RF-01 ──"]
+
+            F_SEARCH{{"🔍  EVENT: onSearchInput()
+            ─────────────────────────────
+            Could have — filtrado
+            client-side filter:
+            products.filter(query)"}}
+
+            F_FILTER["⚙️  filter(): ProductFilterPipe
+            ──────────────────────────────────────
+            param: query string
+            returns: Product[ ] filtered
+            ── Could have ──"]
+
+            F_ADD_CART["🛒  ACTION: addToCart(product, qty)
+            ──────────────────────────────────────
+            mutation: cartStore.add(item)
+            state: cart[ ] updated
+            ── RF-02 ──"]
+
+            F_MORE{{"🔁  CONDITION:
+            ─────────────────────
+            user.continueShipping
+            === true ?"}}
+
+            F_CART_VIEW["🧺  RENDER: CartComponent
+            ──────────────────────────────────────
+            state: cartItems[ ]
+            computed: subtotal, itemCount
+            display: qty, name, unit_price
+            ── RF-02 ──"]
+
+            F_EDIT{{"✏️  EVENT: onQtyChange(itemId, qty)
+            ─────────────────────────────────
+            Should have
+            qty > 0 ? update : remove"}}
+
+            F_UPDATE["🔧  MUTATION: cartStore.update(item)
+            ──────────────────────────────────────
+            action: UPDATE_ITEM_QTY
+            payload: { id, newQty }
+            ── Should have / RF-02 ──"]
+
+            F_EMPTY{{"🗑️  VALIDATION:
+            ──────────────────────
+            cartItems.length > 0 ?"}}
+
+            F_CONFIRM["📤  ACTION: confirmOrder()
+            ──────────────────────────────────────
+            POST /api/orders
+            body: { userId, items[ ], timestamp }
+            ── RF-03 / RN-01 ──"]
+
+            F_TOAST["✅  UI: showToast(success)
+            ──────────────────────────────────────
+            msg: 'Pedido registrado correctamente'
+            type: success | duration: 3000ms
+            ── Could have ──"]
+
+            F_WAIT(["⏳  STATE: order.status = 'pending'
+            ────────────────────────────────
+            Polling / WebSocket listener
+            waiting for status update"])
+        end
+
+%% ════════════════════════════════════════════
+%%  LANE: BACKEND  [API / Business Logic]
+%% ════════════════════════════════════════════
+        subgraph LANE_B["⚙️  LANE: BACKEND  —  API REST / Business Logic"]
+            direction TB
+
+            B_VALIDATE["🔑  AuthMiddleware.validateToken()
+            ──────────────────────────────────────
+            JWT decode → extract role
+            roles: ['user', 'staff']
+            throws: 401 | 403
+            ── RNF-01 ──"]
+
+            B_REGISTER["🗂️  OrderService.createOrder()
+            ──────────────────────────────────────
+            generate: orderId = UUID()
+            set: status = 'PENDING'
+            persist: OrderRepository.save()
+            returns: 201 Created + { orderId }
+            ── RF-04 / RN-02 ──"]
+
+            B_INTEGRITY["🛡️  OrderValidator.validate()
+            ──────────────────────────────────────
+            check: items[ ].length > 0
+            check: qty > 0 per item
+            check: productId exists in DB
+            throws: 400 Bad Request
+            ── RNF-05 ──"]
+
+            B_NOTIFY["📣  EventEmitter: order.created
+            ──────────────────────────────────────
+            emit: NEW_ORDER_EVENT
+            payload: { orderId, status, items }
+            channel: WebSocket / SSE
+            ── RNF-03 ──"]
+
+            B_UPDATE["🔄  OrderService.updateStatus()
+            ──────────────────────────────────────
+            PATCH /api/orders/:id/status
+            body: { newStatus }
+            validate: role === 'staff'
+            validate: statusFlow[ ] sequence
+            ── RF-06 / RN-03 / RN-04 ──"]
+
+            B_FLOW["📏  StatusFlowGuard.check()
+            ──────────────────────────────────────
+            PENDING → IN_PREPARATION
+            IN_PREPARATION → READY
+            READY → DELIVERED
+            throws: 409 if invalid transition
+            ── RN-04 ──"]
+
+            B_LOCK["🔒  OrderService.lockOrder()
+            ──────────────────────────────────────
+            set: order.locked = true
+            set: order.closedAt = Date.now()
+            any PATCH → 403 Forbidden
+            ── RN-05 ──"]
+        end
+
+%% ════════════════════════════════════════════
+%%  LANE: DATABASE  [Persistence]
+%% ════════════════════════════════════════════
+        subgraph LANE_DB["🗄️  LANE: DATABASE  —  Persistence Layer"]
+            direction TB
+
+            DB_PROD["📦  SELECT * FROM products
+            ──────────────────────────────────────
+            table: products
+            fields: id, name, price,
+                    description, available
+            ── RF-01 ──"]
+
+            DB_SAVE["💾  INSERT INTO orders
+            ──────────────────────────────────────
+            table: orders
+            fields: id, userId, status,
+                    createdAt, locked
+            + INSERT INTO order_items
+            ── RF-04 ──"]
+
+            DB_UPD_STATUS["🔁  UPDATE orders
+            ──────────────────────────────────────
+            SET status = :newStatus,
+                updatedAt = NOW()
+            WHERE id = :orderId
+            ── RF-06 ──"]
+
+            DB_LOCK["🔐  UPDATE orders
+            ──────────────────────────────────────
+            SET locked = true,
+                closedAt = NOW()
+            WHERE id = :orderId
+            ── RN-05 ──"]
+        end
+
+%% ════════════════════════════════════════════
+%%  LANE: STAFF  [Personal del Cafetín]
+%% ════════════════════════════════════════════
+        subgraph LANE_S["🧑‍🍳  LANE: STAFF  —  Personal del Cafetín  [role: staff]"]
+            direction TB
+
+            S_DASHBOARD["📄  RENDER: OrderDashboardComponent
+            ──────────────────────────────────────
+            GET /api/orders?status=all
+            display: orderId, items,
+                     status, createdAt
+            ── RF-05 ──"]
+
+            S_SORT{{"📊  EVENT: onSortOrFilter()
+            ─────────────────────────────────
+            Could have
+            sort: by status | by time
+            filter: by status"}}
+
+            S_SORTED["🔀  SORT / FILTER: OrderListPipe
+            ──────────────────────────────────────
+            param: sortBy | filterBy
+            returns: Order[ ] sorted
+            ── Could have ──"]
+
+            S_SELECT["👆  ACTION: selectOrder(orderId)
+            ──────────────────────────────────────
+            GET /api/orders/:id
+            display: full order detail
+            ── RF-06 ──"]
+
+            S_STATUS_CHK{{"🏷️  SWITCH: order.status
+            ─────────────────────────────────
+            'PENDING' |
+            'IN_PREPARATION' |
+            'READY' |
+            'DELIVERED'
+            ── RF-06 / RN-03 ──"}}
+
+            S_TO_PREP["🔄  PATCH /api/orders/:id/status
+            ──────────────────────────────────────
+            body: { status: 'IN_PREPARATION' }
+            validates: StatusFlowGuard
+            ── RF-06 / RN-04 ──"]
+
+            S_COOK["👨‍🍳  TASK: prepareOrder(orderId)
+            ──────────────────────────────────────
+            manual task: staff elabora
+            los productos del pedido
+            sin interacción con el sistema"]
+
+            S_READY_CHK{{"✔️  CONDITION:
+            ──────────────────────────────
+            allItems.prepared === true ?"}}
+
+            S_TO_READY["🟢  PATCH /api/orders/:id/status
+            ──────────────────────────────────────
+            body: { status: 'READY' }
+            validates: StatusFlowGuard
+            ── RF-06 / RN-04 ──"]
+
+            S_BADGE["🪧  UI: OrderBadge highlight
+            ──────────────────────────────────────
+            badge color: GREEN
+            label: 'LISTO'
+            trigger: status === 'READY'
+            ── Should have ──"]
+
+            S_DELIVER["🤝  TASK: deliverOrder(orderId)
+            ──────────────────────────────────────
+            manual task: staff entrega
+            físicamente el pedido al usuario"]
+
+            S_TO_DELIVERED["🏁  PATCH /api/orders/:id/status
+            ──────────────────────────────────────
+            body: { status: 'DELIVERED' }
+            validates: StatusFlowGuard
+            ── RF-06 / RN-04 ──"]
+
+            S_END(["✅  END: process.complete
+            ────────────────────────────────
+            order.status = 'DELIVERED'
+            order.locked = true
+            order.closedAt = timestamp"])
+        end
+
+    end
+
+%% ════════════════════════════════════════════
+%%  FLUJO — FRONTEND / USUARIO
+%% ════════════════════════════════════════════
+
+    F_START      --> F_HTTP
+    F_HTTP       --> B_VALIDATE
+    B_VALIDATE   --> F_AUTH_CHK
+    F_AUTH_CHK   -- "❌ 403" --> F_403
+    F_AUTH_CHK   -- "✅ role: user" --> DB_PROD
+    DB_PROD      --> F_RENDER_CAT
+    F_RENDER_CAT --> F_SEARCH
+    F_SEARCH     -- "Sí → query != ''" --> F_FILTER --> F_ADD_CART
+    F_SEARCH     -- "No → query == ''" --> F_ADD_CART
+    F_ADD_CART   --> F_MORE
+    F_MORE       -- "true" --> F_RENDER_CAT
+    F_MORE       -- "false" --> F_CART_VIEW
+    F_CART_VIEW  --> F_EDIT
+    F_EDIT       -- "true → onQtyChange" --> F_UPDATE --> F_CART_VIEW
+    F_EDIT       -- "false" --> F_EMPTY
+    F_EMPTY      -- "false → length === 0" --> F_RENDER_CAT
+    F_EMPTY      -- "true → length > 0" --> F_CONFIRM
+    F_CONFIRM    --> B_INTEGRITY
+
+%% ════════════════════════════════════════════
+%%  FLUJO — BACKEND
+%% ════════════════════════════════════════════
+
+    B_INTEGRITY  --> B_REGISTER
+    B_REGISTER   --> DB_SAVE
+    DB_SAVE      --> F_TOAST
+    F_TOAST      --> F_WAIT
+    DB_SAVE      --> B_NOTIFY
+    B_NOTIFY     --> S_DASHBOARD
+    B_UPDATE     --> B_FLOW
+    B_FLOW       --> DB_UPD_STATUS
+    S_TO_DELIVERED --> B_UPDATE
+    S_TO_PREP    --> B_UPDATE
+    S_TO_READY   --> B_UPDATE
+    DB_UPD_STATUS --> B_LOCK
+    B_LOCK       --> DB_LOCK
+    DB_LOCK      --> S_END
+
+%% ════════════════════════════════════════════
+%%  FLUJO — STAFF / CAFETÍN
+%% ════════════════════════════════════════════
+
+    F_AUTH_CHK   -- "✅ role: staff" --> S_DASHBOARD
+    S_DASHBOARD  --> S_SORT
+    S_SORT       -- "true" --> S_SORTED --> S_SELECT
+    S_SORT       -- "false" --> S_SELECT
+    S_SELECT     --> S_STATUS_CHK
+    S_STATUS_CHK -- "'PENDING'" --> S_TO_PREP
+    S_STATUS_CHK -- "'IN_PREPARATION'" --> S_COOK
+    S_STATUS_CHK -- "'READY'" --> S_DELIVER
+    S_TO_PREP    --> S_COOK
+    S_COOK       --> S_READY_CHK
+    S_READY_CHK  -- "false" --> S_COOK
+    S_READY_CHK  -- "true" --> S_TO_READY
+    S_TO_READY   --> S_BADGE
+    S_BADGE      --> S_DELIVER
+    S_DELIVER    --> S_TO_DELIVERED
+
+%% ════════════════════════════════════════════
+%%  ESTILOS — EVENTOS
+%% ═══════════════��════════════════════════════
+
+    style F_START       fill:#0f172a,color:#4ade80,stroke:#4ade80
+    style F_403         fill:#7f1d1d,color:#fca5a5,stroke:#ef4444
+    style F_WAIT        fill:#1e3a5f,color:#93c5fd,stroke:#3b82f6
+    style S_END         fill:#14532d,color:#86efac,stroke:#22c55e
+
+%% ════════════════════════════════════════════
+%%  ESTILOS — FRONTEND
+%% ════════════════════════════════════════════
+
+    style F_HTTP        fill:#0f172a,color:#cbd5e1,stroke:#475569
+    style F_RENDER_CAT  fill:#0f172a,color:#cbd5e1,stroke:#475569
+    style F_ADD_CART    fill:#0f172a,color:#cbd5e1,stroke:#475569
+    style F_CART_VIEW   fill:#0f172a,color:#cbd5e1,stroke:#475569
+    style F_CONFIRM     fill:#0f172a,color:#cbd5e1,stroke:#475569
+    style F_TOAST       fill:#1e293b,color:#94a3b8,stroke:#334155,stroke-dasharray:5
+    style F_FILTER      fill:#1e293b,color:#94a3b8,stroke:#334155,stroke-dasharray:5
+    style F_UPDATE      fill:#1e293b,color:#94a3b8,stroke:#334155,stroke-dasharray:5
+
+%% ════════════════════════════════════════════
+%%  ESTILOS — BACKEND
+%% ════════════════════════════════════════════
+
+    style B_VALIDATE    fill:#312e81,color:#c7d2fe,stroke:#6366f1
+    style B_REGISTER    fill:#312e81,color:#c7d2fe,stroke:#6366f1
+    style B_INTEGRITY   fill:#312e81,color:#c7d2fe,stroke:#6366f1
+    style B_NOTIFY      fill:#312e81,color:#c7d2fe,stroke:#6366f1
+    style B_UPDATE      fill:#312e81,color:#c7d2fe,stroke:#6366f1
+    style B_FLOW        fill:#312e81,color:#c7d2fe,stroke:#6366f1
+    style B_LOCK        fill:#4c1d95,color:#ddd6fe,stroke:#7c3aed
+
+%% ════════════════════════════════════════════
+%%  ESTILOS — DATABASE
+%% ════════════════════════════════════════════
+
+    style DB_PROD       fill:#164e63,color:#a5f3fc,stroke:#0891b2
+    style DB_SAVE       fill:#164e63,color:#a5f3fc,stroke:#0891b2
+    style DB_UPD_STATUS fill:#164e63,color:#a5f3fc,stroke:#0891b2
+    style DB_LOCK       fill:#164e63,color:#a5f3fc,stroke:#0891b2
+
+%% ════════════════════════════════════════════
+%%  ESTILOS — STAFF
+%% ════════════════════════════════════════════
+
+    style S_DASHBOARD   fill:#052e16,color:#bbf7d0,stroke:#16a34a
+    style S_SELECT      fill:#052e16,color:#bbf7d0,stroke:#16a34a
+    style S_TO_PREP     fill:#052e16,color:#bbf7d0,stroke:#16a34a
+    style S_COOK        fill:#052e16,color:#bbf7d0,stroke:#16a34a
+    style S_TO_READY    fill:#052e16,color:#bbf7d0,stroke:#16a34a
+    style S_BADGE       fill:#064e3b,color:#a7f3d0,stroke:#059669,stroke-dasharray:5
+    style S_DELIVER     fill:#052e16,color:#bbf7d0,stroke:#16a34a
+    style S_TO_DELIVERED fill:#052e16,color:#bbf7d0,stroke:#16a34a
+    style S_SORTED      fill:#064e3b,color:#a7f3d0,stroke:#059669,stroke-dasharray:5
+
+%% ════════════════════════════════════════════
+%%  ESTILOS — GATEWAYS
+%% ════════════════════════════════════════════
+
+    style F_AUTH_CHK    fill:#1c1917,color:#fde68a,stroke:#f59e0b
+    style F_SEARCH      fill:#1c1917,color:#fde68a,stroke:#f59e0b
+    style F_MORE        fill:#1c1917,color:#fde68a,stroke:#f59e0b
+    style F_EDIT        fill:#1c1917,color:#fde68a,stroke:#f59e0b
+    style F_EMPTY       fill:#1c1917,color:#fde68a,stroke:#f59e0b
+    style S_SORT        fill:#1c1917,color:#fde68a,stroke:#f59e0b
+    style S_STATUS_CHK  fill:#1c1917,color:#fde68a,stroke:#f59e0b
+    style S_READY_CHK   fill:#1c1917,color:#fde68a,stroke:#f59e0b

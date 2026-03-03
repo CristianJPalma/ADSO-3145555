@@ -1,0 +1,402 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#f8fafc",
+    "primaryBorderColor": "#1e40af",
+    "lineColor": "#334155",
+    "fontSize": "16px",
+    "edgeLabelBackground": "#f0f4ff"
+  }
+}}%%
+
+flowchart TD
+
+    subgraph POOL["🏛️  PROCESO DE NEGOCIO: Gestión de Pedidos  —  Cafetín SENA Industrial"]
+        direction TB
+
+%% ════════════════════════════════════════════
+%%  LANE: USUARIO / CLIENTE
+%% ════════════════════════════════════════════
+        subgraph LANE_U["👤  PARTICIPANTE: Usuario / Cliente"]
+            direction TB
+
+            U_START(["🟢  EVENTO DE INICIO
+            ──────────────────────────
+            El usuario manifiesta
+            la necesidad de realizar
+            un pedido en el Cafetín"])
+
+            U_ACCESO["📌  Acceder al sistema
+            ──────────────────────────────────────
+            El usuario ingresa al sistema de gestión
+            de pedidos a través del navegador web,
+            proporcionando sus credenciales
+            para validar su identidad y rol.
+            ── RNF-04 ──"]
+
+            U_ROL{{"🔐  ¿Posee rol
+            de acceso
+            autorizado?
+            ── RNF-01 ──"}}
+
+            U_DENEGADO(["🔴  ACCESO DENEGADO
+            ──────────────────────────
+            El sistema rechaza el acceso.
+            El usuario es notificado
+            y redirigido a la pantalla
+            de inicio."])
+
+            U_CATALOGO["📋  Consultar catálogo de productos
+            ──────────────────────────────────────
+            El usuario visualiza el listado completo
+            de productos disponibles en el Cafetín,
+            incluyendo nombre, descripción y precio
+            de cada producto ofertado.
+            ── RF-01 ──"]
+
+            U_BUSCA{{"🔍  ¿Desea buscar
+            o filtrar algún
+            producto específico?
+            ── Funcionalidad opcional ──"}}
+
+            U_FILTRA["🔎  Buscar o filtrar producto
+            ──────────────────────────────────────
+            El usuario emplea el buscador o los
+            filtros disponibles para localizar
+            de manera ágil el producto deseado
+            dentro del catálogo.
+            ── Podría tenerse (Could have) ──"]
+
+            U_SELEC["🖱️  Seleccionar producto y cantidad
+            ──────────────────────────────────────
+            El usuario elige el producto de su
+            preferencia e indica la cantidad
+            que desea incluir en su pedido.
+            ── RF-02 ──"]
+
+            U_AGREGA["➕  Agregar producto al carrito
+            ──────────────────────────────────────
+            El producto seleccionado junto con
+            la cantidad indicada es añadido
+            al carrito de compras del usuario.
+            ── RF-02 ──"]
+
+            U_MAS{{"🔁  ¿Desea agregar
+            más productos
+            al pedido?"}}
+
+            U_CARRITO["🧺  Revisar carrito de compras
+            ──────────────────────────────────────
+            El usuario visualiza el resumen completo
+            de su pedido: productos seleccionados,
+            cantidades y el total del pedido antes
+            de proceder a su confirmación.
+            ── RF-02 ──"]
+
+            U_MODIFICA{{"✏️  ¿Desea modificar
+            las cantidades de
+            algún producto?
+            ── Debería tenerse ──"}}
+
+            U_EDIT["🔧  Modificar cantidades en el carrito
+            ──────────────────────────────────────
+            El usuario ajusta la cantidad de uno
+            o más productos dentro del carrito,
+            actualizando el resumen del pedido
+            de forma inmediata.
+            ── Debería tenerse (Should have) / RF-02 ──"]
+
+            U_VACIO{{"🗑️  ¿El carrito contiene
+            al menos un
+            producto?"}}
+
+            U_CONFIRMA["✅  Confirmar pedido
+            ──────────────────────────────────────
+            El usuario revisa el resumen final
+            del pedido y procede a confirmarlo,
+            autorizando su envío al Cafetín
+            para su preparación.
+            ── RF-03 / RN-01 ──"]
+
+            U_MSG["💬  Recibir confirmación del pedido
+            ──────────────────────────────────────
+            El sistema presenta al usuario
+            un mensaje de confirmación visual
+            indicando que el pedido fue registrado
+            exitosamente en el sistema.
+            ── Podría tenerse (Could have) ──"]
+
+            U_ESPERA(["🔵  EVENTO INTERMEDIO DE ESPERA
+            ──────────────────────────────────────
+            El usuario aguarda la preparación
+            y posterior entrega de su pedido
+            por parte del Personal del Cafetín."])
+        end
+
+%% ════════════════════════════════════════════
+%%  LANE: SISTEMA
+%% ════════════════════════════════════════════
+        subgraph LANE_S["⚙️  PARTICIPANTE: Sistema  —  Procesos Automatizados"]
+            direction TB
+
+            S_AUTENTICA["🔑  Validar identidad y rol del usuario
+            ──────────────────────────────────────
+            El sistema verifica automáticamente
+            las credenciales del usuario y determina
+            el rol que le corresponde dentro del
+            sistema (Usuario o Personal del Cafetín).
+            ── RNF-01 ──"]
+
+            S_REGISTRA["🗂️  Registrar pedido confirmado
+            ──────────────────────────────────────
+            El sistema genera un registro formal
+            del pedido asignándole un identificador
+            único y estableciendo su estado inicial
+            como  ★ PENDIENTE ★
+            ── RF-04 / RN-02 ──"]
+
+            S_INTEGRIDAD["🛡️  Verificar integridad del pedido
+            ──────────────────────────────────────
+            El sistema valida que la información
+            del pedido sea completa, correcta y
+            consistente antes de persistirla,
+            garantizando la calidad del registro.
+            ── RNF-05 ──"]
+
+            S_NOTIFICA["📣  Notificar nuevo pedido al Cafetín
+            ──────────────────────────────────────
+            El sistema hace visible de forma
+            inmediata el nuevo pedido registrado
+            en el panel de gestión del
+            Personal del Cafetín.
+            ── RNF-03 ──"]
+
+            S_BLOQUEA["🔒  Bloquear pedido entregado
+            ──────────────────────────────────────
+            Una vez que el pedido es marcado
+            como  ★ ENTREGADO ★, el sistema
+            impide cualquier modificación posterior
+            sobre dicho pedido.
+            ── RN-05 ──"]
+        end
+
+%% ════════════════════════════════════════════
+%%  LANE: PERSONAL DEL CAFETÍN
+%% ════════════════════════════════════════════
+        subgraph LANE_C["🧑‍🍳  PARTICIPANTE: Personal del Cafetín"]
+            direction TB
+
+            C_LISTA["📄  Visualizar lista de pedidos recibidos
+            ──────────────────────────────────────
+            El Personal del Cafetín accede al
+            panel de gestión donde visualiza todos
+            los pedidos registrados junto con
+            su estado actual de atención.
+            ── RF-05 ──"]
+
+            C_ORDEN{{"📊  ¿Desea ordenar
+            o filtrar la lista
+            de pedidos?
+            ── Funcionalidad opcional ──"}}
+
+            C_ORDENA["🔀  Ordenar o filtrar pedidos
+            ──────────────────────────────────────
+            El personal organiza la lista de pedidos
+            por estado de atención o por orden
+            cronológico de llegada para facilitar
+            la gestión de la atención.
+            ── Podría tenerse (Could have) ──"]
+
+            C_SELEC["👆  Seleccionar pedido a gestionar
+            ──────────────────────────────────────
+            El personal selecciona de la lista
+            un pedido específico para consultar
+            su detalle completo y proceder
+            con su gestión de estado.
+            ── RF-06 ──"]
+
+            C_ESTADO{{"🏷️  ¿Cuál es el estado
+            actual del pedido
+            seleccionado?
+            ── RF-06 / RN-03 ──"}}
+
+            C_VER["👁️  Revisar detalle del pedido
+            ──────────────────────────────────────
+            El personal consulta la información
+            completa del pedido: productos,
+            cantidades e identificador,
+            antes de iniciar su preparación."]
+
+            C_PREP["🔄  Cambiar estado a: EN PREPARACIÓN
+            ──────────────────────────────────────
+            El personal registra en el sistema
+            el inicio de la preparación del pedido,
+            actualizando su estado de
+            PENDIENTE  →  EN PREPARACIÓN
+            ── RF-06 / RN-03 / RN-04 ──"]
+
+            C_PREPARA["👨‍🍳  Preparar los productos del pedido
+            ─────────────────────────────���────────
+            El personal procede a la elaboración
+            física de todos los productos
+            incluidos en el pedido del usuario,
+            siguiendo el detalle registrado."]
+
+            C_LISTO_CHK{{"✔️  ¿Todos los productos
+            del pedido se encuentran
+            completamente preparados?"}}
+
+            C_LISTO["🟢  Cambiar estado a: LISTO
+            ──────────────────────────────────────
+            El personal registra en el sistema
+            que el pedido está completamente
+            preparado y disponible para entrega,
+            EN PREPARACIÓN  →  LISTO
+            ── RF-06 / RN-03 / RN-04 ──"]
+
+            C_IDENTIFICA["🪧  Identificación visual del estado
+            ──────────────────────────────────────
+            El sistema resalta visualmente el pedido
+            con el indicador  ★ LISTO ★  en
+            la interfaz, facilitando su
+            localización para la entrega.
+            ── Debería tenerse (Should have) ──"]
+
+            C_ENTREGA["🤝  Entregar pedido al usuario
+            ──────────────────────────────────────
+            El Personal del Cafetín hace entrega
+            física del pedido preparado
+            al usuario solicitante que
+            lo aguarda en el Cafetín."]
+
+            C_ENTREGADO["🏁  Cambiar estado a: ENTREGADO
+            ──────────────────────────────────────
+            El personal confirma en el sistema
+            la entrega exitosa del pedido,
+            registrando el cierre del proceso,
+            LISTO  →  ENTREGADO
+            ── RF-06 / RN-03 / RN-04 ──"]
+
+            C_END(["🟢  EVENTO DE FIN
+            ──────────────────────────
+            El proceso de gestión del pedido
+            concluye satisfactoriamente.
+            El pedido queda cerrado
+            e inmodificable en el sistema."])
+        end
+
+    end
+
+%% ════════════════════════════════════════════
+%%  FLUJO — USUARIO
+%% ════════════════════════════════════════════
+
+    U_START      --> U_ACCESO
+    U_ACCESO     --> S_AUTENTICA
+    S_AUTENTICA  --> U_ROL
+    U_ROL        -- "No autorizado" --> U_DENEGADO
+    U_ROL        -- "Rol: Usuario" --> U_CATALOGO
+    U_CATALOGO   --> U_BUSCA
+    U_BUSCA      -- "Sí, desea buscar" --> U_FILTRA --> U_SELEC
+    U_BUSCA      -- "No, navega libremente" --> U_SELEC
+    U_SELEC      --> U_AGREGA
+    U_AGREGA     --> U_MAS
+    U_MAS        -- "Sí, continúa comprando" --> U_CATALOGO
+    U_MAS        -- "No, ir al carrito" --> U_CARRITO
+    U_CARRITO    --> U_MODIFICA
+    U_MODIFICA   -- "Sí, ajusta cantidades" --> U_EDIT --> U_CARRITO
+    U_MODIFICA   -- "No, carrito correcto" --> U_VACIO
+    U_VACIO      -- "No, carrito vacío" --> U_CATALOGO
+    U_VACIO      -- "Sí, con productos" --> U_CONFIRMA
+    U_CONFIRMA   --> S_INTEGRIDAD
+
+%% ════════════════════════════════════════════
+%%  FLUJO — SISTEMA
+%% ════════════════════════════════════════════
+
+    S_INTEGRIDAD --> S_REGISTRA
+    S_REGISTRA   --> U_MSG
+    U_MSG        --> U_ESPERA
+    S_REGISTRA   --> S_NOTIFICA
+    S_NOTIFICA   --> C_LISTA
+    C_ENTREGADO  --> S_BLOQUEA
+    S_BLOQUEA    --> C_END
+
+%% ════════════════════════════════════════════
+%%  FLUJO — PERSONAL DEL CAFETÍN
+%% ════════════════════════════════════════════
+
+    U_ROL        -- "Rol: Personal del Cafetín" --> C_LISTA
+    C_LISTA      --> C_ORDEN
+    C_ORDEN      -- "Sí, desea ordenar" --> C_ORDENA --> C_SELEC
+    C_ORDEN      -- "No, lista como está" --> C_SELEC
+    C_SELEC      --> C_ESTADO
+    C_ESTADO     -- "Pendiente" --> C_VER --> C_PREP --> C_PREPARA
+    C_ESTADO     -- "En preparación" --> C_PREPARA
+    C_ESTADO     -- "Listo" --> C_ENTREGA
+    C_PREPARA    --> C_LISTO_CHK
+    C_LISTO_CHK  -- "No, continúa preparación" --> C_PREPARA
+    C_LISTO_CHK  -- "Sí, pedido completo" --> C_LISTO
+    C_LISTO      --> C_IDENTIFICA --> C_ENTREGA
+    C_ENTREGA    --> C_ENTREGADO
+
+%% ════════════════════════════════════════════
+%%  ESTILOS — EVENTOS
+%% ════════════════════════════════════════════
+
+    style U_START      fill:#15803d,color:#f0fdf4,stroke:#166534
+    style U_DENEGADO   fill:#b91c1c,color:#fff1f2,stroke:#991b1b
+    style U_ESPERA     fill:#1d4ed8,color:#eff6ff,stroke:#1e40af
+    style C_END        fill:#065f46,color:#ecfdf5,stroke:#047857
+
+%% ════════════════════════════════════════════
+%%  ESTILOS — TAREAS USUARIO
+%% ════════════════════════════════════════════
+
+    style U_ACCESO     fill:#eff6ff,stroke:#1d4ed8,color:#1e3a5f
+    style U_CATALOGO   fill:#eff6ff,stroke:#1d4ed8,color:#1e3a5f
+    style U_SELEC      fill:#eff6ff,stroke:#1d4ed8,color:#1e3a5f
+    style U_AGREGA     fill:#eff6ff,stroke:#1d4ed8,color:#1e3a5f
+    style U_CARRITO    fill:#eff6ff,stroke:#1d4ed8,color:#1e3a5f
+    style U_CONFIRMA   fill:#eff6ff,stroke:#1d4ed8,color:#1e3a5f
+    style U_FILTRA     fill:#dbeafe,stroke:#2563eb,stroke-dasharray:6,color:#1e3a5f
+    style U_EDIT       fill:#dbeafe,stroke:#2563eb,stroke-dasharray:6,color:#1e3a5f
+    style U_MSG        fill:#dbeafe,stroke:#2563eb,stroke-dasharray:6,color:#1e3a5f
+
+%% ════════════════════════════════════════════
+%%  ESTILOS — TAREAS SISTEMA
+%% ════════════════════════════════════════════
+
+    style S_AUTENTICA  fill:#fffbeb,stroke:#d97706,color:#78350f
+    style S_REGISTRA   fill:#fffbeb,stroke:#d97706,color:#78350f
+    style S_INTEGRIDAD fill:#fffbeb,stroke:#d97706,color:#78350f
+    style S_NOTIFICA   fill:#fffbeb,stroke:#d97706,color:#78350f
+    style S_BLOQUEA    fill:#fef3c7,stroke:#b45309,color:#78350f
+
+%% ════════════════════════════════════════════
+%%  ESTILOS — TAREAS CAFETÍN
+%% ════════════════════════════════════════════
+
+    style C_LISTA      fill:#f0fdf4,stroke:#15803d,color:#14532d
+    style C_SELEC      fill:#f0fdf4,stroke:#15803d,color:#14532d
+    style C_VER        fill:#f0fdf4,stroke:#15803d,color:#14532d
+    style C_PREP       fill:#f0fdf4,stroke:#15803d,color:#14532d
+    style C_PREPARA    fill:#f0fdf4,stroke:#15803d,color:#14532d
+    style C_LISTO      fill:#f0fdf4,stroke:#15803d,color:#14532d
+    style C_ENTREGA    fill:#f0fdf4,stroke:#15803d,color:#14532d
+    style C_ENTREGADO  fill:#f0fdf4,stroke:#15803d,color:#14532d
+    style C_ORDENA     fill:#dcfce7,stroke:#16a34a,stroke-dasharray:6,color:#14532d
+    style C_IDENTIFICA fill:#dcfce7,stroke:#16a34a,stroke-dasharray:6,color:#14532d
+
+%% ════════════════════════════════════════════
+%%  ESTILOS — GATEWAYS
+%% ════════════════════════════════════════════
+
+    style U_ROL        fill:#fdf4ff,stroke:#9333ea,color:#4a044e
+    style U_BUSCA      fill:#fdf4ff,stroke:#9333ea,color:#4a044e
+    style U_MAS        fill:#fdf4ff,stroke:#9333ea,color:#4a044e
+    style U_MODIFICA   fill:#fdf4ff,stroke:#9333ea,color:#4a044e
+    style U_VACIO      fill:#fdf4ff,stroke:#9333ea,color:#4a044e
+    style C_ORDEN      fill:#fdf4ff,stroke:#9333ea,color:#4a044e
+    style C_ESTADO     fill:#fdf4ff,stroke:#9333ea,color:#4a044e
+    style C_LISTO_CHK  fill:#fdf4ff,stroke:#9333ea,color:#4a044e
