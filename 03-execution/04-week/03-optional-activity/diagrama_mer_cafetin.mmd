@@ -1,0 +1,201 @@
+erDiagram
+    TYPE_DOCUMENT {
+        UUID id PK
+        VARCHAR name
+        VARCHAR code UK
+        TEXT description
+        VARCHAR status
+    }
+
+    PERSON {
+        UUID id PK
+        UUID type_document_id FK
+        VARCHAR first_name
+        VARCHAR last_name
+        VARCHAR document_number
+        VARCHAR status
+    }
+
+    FILE {
+        UUID id PK
+        VARCHAR name
+        UUID entity_id
+        VARCHAR entity_name
+        VARCHAR status
+    }
+
+    ROLE {
+        UUID id PK
+        VARCHAR name UK
+        TEXT description
+        VARCHAR status
+    }
+
+    MODULE {
+        UUID id PK
+        VARCHAR name UK
+        VARCHAR route
+        VARCHAR status
+    }
+
+    APP_VIEW {
+        UUID id PK
+        VARCHAR name
+        VARCHAR route UK
+        VARCHAR status
+    }
+
+    APP_USER {
+        UUID id PK
+        UUID person_id FK
+        VARCHAR username UK
+        VARCHAR email UK
+        VARCHAR status
+    }
+
+    USER_ROLE {
+        UUID id PK
+        UUID user_id FK
+        UUID role_id FK
+        VARCHAR status
+    }
+
+    ROLE_MODULE {
+        UUID id PK
+        UUID role_id FK
+        UUID module_id FK
+        VARCHAR status
+    }
+
+    MODULE_VIEW {
+        UUID id PK
+        UUID module_id FK
+        UUID view_id FK
+        VARCHAR status
+    }
+
+    CATEGORY {
+        UUID id PK
+        VARCHAR name UK
+        VARCHAR icon
+        VARCHAR status
+    }
+
+    SUPPLIER {
+        UUID id PK
+        UUID person_id FK
+        VARCHAR company_name
+        VARCHAR status
+    }
+
+    PRODUCT {
+        UUID id PK
+        UUID category_id FK
+        UUID supplier_id FK
+        VARCHAR name
+        NUMERIC price
+        NUMERIC cost
+        VARCHAR sku UK
+        VARCHAR status
+    }
+
+    INVENTORY {
+        UUID id PK
+        UUID product_id FK
+        NUMERIC quantity
+        NUMERIC min_stock
+        NUMERIC max_stock
+        VARCHAR unit
+        VARCHAR status
+    }
+
+    CUSTOMER {
+        UUID id PK
+        UUID person_id FK
+        INTEGER loyalty_points
+        VARCHAR status
+    }
+
+    METHOD_PAYMENT {
+        UUID id PK
+        VARCHAR name UK
+        VARCHAR status
+    }
+
+    SALES_ORDER {
+        UUID id PK
+        UUID customer_id FK
+        UUID user_id FK
+        VARCHAR order_number UK
+        TIMESTAMPTZ order_date
+        NUMERIC total
+        VARCHAR status
+    }
+
+    ORDER_ITEM {
+        UUID id PK
+        UUID order_id FK
+        UUID product_id FK
+        NUMERIC quantity
+        NUMERIC unit_price
+        VARCHAR status
+    }
+
+    INVOICE {
+        UUID id PK
+        UUID order_id FK
+        UUID customer_id FK
+        VARCHAR invoice_number UK
+        TIMESTAMPTZ issue_date
+        NUMERIC total
+        VARCHAR status
+    }
+
+    INVOICE_ITEM {
+        UUID id PK
+        UUID invoice_id FK
+        UUID product_id FK
+        NUMERIC quantity
+        NUMERIC unit_price
+        VARCHAR status
+    }
+
+    PAYMENT {
+        UUID id PK
+        UUID invoice_id FK
+        UUID method_payment_id FK
+        NUMERIC amount
+        TIMESTAMPTZ payment_date
+        VARCHAR status
+    }
+
+    TYPE_DOCUMENT ||--o{ PERSON : defines
+    PERSON ||--o| APP_USER : profiles
+    PERSON ||--o{ SUPPLIER : registers
+    PERSON ||--o{ CUSTOMER : registers
+
+    ROLE ||--o{ USER_ROLE : assigns
+    APP_USER ||--o{ USER_ROLE : receives
+
+    ROLE ||--o{ ROLE_MODULE : grants
+    MODULE ||--o{ ROLE_MODULE : includes
+
+    MODULE ||--o{ MODULE_VIEW : contains
+    APP_VIEW ||--o{ MODULE_VIEW : exposes
+
+    CATEGORY ||--o{ PRODUCT : groups
+    SUPPLIER ||--o{ PRODUCT : supplies
+    PRODUCT ||--o| INVENTORY : tracked_by
+
+    CUSTOMER ||--o{ SALES_ORDER : places
+    APP_USER ||--o{ SALES_ORDER : processes
+    SALES_ORDER ||--o{ ORDER_ITEM : contains
+    PRODUCT ||--o{ ORDER_ITEM : ordered_as
+
+    SALES_ORDER ||--o| INVOICE : billed_as
+    CUSTOMER ||--o{ INVOICE : receives
+    INVOICE ||--o{ INVOICE_ITEM : details
+    PRODUCT ||--o{ INVOICE_ITEM : listed_as
+
+    METHOD_PAYMENT ||--o{ PAYMENT : used_in
+    INVOICE ||--o{ PAYMENT : settled_by
